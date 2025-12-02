@@ -226,32 +226,5 @@ def validate_character_data(character):
         if not isinstance(character[lst], list):
             raise InvalidSaveDataError(f"{lst} must be a list")
 
-    return
+    return True
 
-# ============================================================================
-# TESTING
-# ============================================================================
-
-if __name__ == "__main__":
-    print("=== CHARACTER MANAGER TEST ===")
-
-    try:
-        char = create_character("TestHero", "Warrior")
-        print(f"Created: {char['name']} the {char['class']}")
-        print(f"Stats: HP={char['health']}, STR={char['strength']}, MAG={char['magic']}")
-    except InvalidCharacterClassError as e:
-        print(f"Invalid class: {e}")
-
-    try:
-        save_character(char)
-        print("Character saved successfully")
-    except Exception as e:
-        print(f"Save error: {e}")
-
-    try:
-        loaded = load_character("TestHero")
-        print(f"Loaded: {loaded['name']}")
-    except CharacterNotFoundError:
-        print("Character not found")
-    except SaveFileCorruptedError:
-        print("Save file corrupted")
