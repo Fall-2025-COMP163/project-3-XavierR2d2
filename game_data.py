@@ -219,28 +219,5 @@ def parse_item_block(lines):
         item_info[key] = value
 
     return item_info
-# ============================================================================
-# TESTING
-# ============================================================================
 
-if __name__ == "__main__":
-    print("=== GAME DATA MODULE TEST ===")
-    
-     create_default_data_files()
-    
-    try:
-        quests = load_quests()
-        print(f"Loaded {len(quests)} quests")
-    except MissingDataFileError:
-        print("Quest file not found")
-    except InvalidDataFormatError as e:
-        print(f"Invalid quest format: {e}")
-
-    try:
-        items = load_items()
-        print(f"Loaded {len(items)} items")
-    except MissingDataFileError:
-        print("Item file not found")
-    except InvalidDataFormatError as e:
-        print(f"Invalid item format: {e}")
 
