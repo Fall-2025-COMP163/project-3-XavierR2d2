@@ -23,21 +23,11 @@ from custom_exceptions import (
 # ============================================================================
 
 def create_character(name, character_class):
-    """
-    Create a new character with stats based on class
-    
-    Valid classes: Warrior, Mage, Rogue, Cleric
-    
-    Returns: Dictionary with character data including:
-            - name, class, level, health, max_health, strength, magic
-            - experience, gold, inventory, active_quests, completed_quests
-    
-    Raises: InvalidCharacterClassError if class is not valid
-    """
     valid_classes = ["Warrior", "Mage", "Rogue", "Cleric"]
 
     if character_class not in valid_classes:
-        raise InvalidCharacterClassError(f"invalid class: {character_class}")
+        raise InvalidCharacterClassError(f"invalid class: 
+    {character_class}")
 
     class_stats = {
         "Warrior": {"health": 120, "strength": 15, "magic": 5},
@@ -64,19 +54,6 @@ def create_character(name, character_class):
     }
 
     return character
-    # TODO: Implement character creation
-    # Validate character_class first
-    # Example base stats:
-    # Warrior: health=120, strength=15, magic=5
-    # Mage: health=80, strength=8, magic=20
-    # Rogue: health=90, strength=12, magic=10
-    # Cleric: health=100, strength=10, magic=15
-    
-    # All characters start with:
-    # - level=1, experience=0, gold=100
-    # - inventory=[], active_quests=[], completed_quests=[]
-    
-    # Raise InvalidCharacterClassError if class not in valid list
     pass
 
 def save_character(character, save_directory="data/save_games"):
@@ -102,10 +79,15 @@ def save_character(character, save_directory="data/save_games"):
     Returns: True if successful
     Raises: PermissionError, IOError (let them propagate or handle)
     """
-     os.makedirs(save_directory, exist_ok=True)
-    path = os.path.join(save_directory, f"{character['name']}_save.txt")
+    
+    if not os.path.exists(save_directory):
+        os.makedirs(save_directory)
 
-    with open(path, 'w') as f:
+    filename = os.path.join(save_directory, f"
+{character['name']}_save.txt")
+
+    try:
+        with open(path, 'w') as f:
         f.write(f"NAME: {character['name']}\n")
         f.write(f"CLASS: {character['class']}\n")
         f.write(f"LEVEL: {character['level']}\n")
@@ -115,12 +97,15 @@ def save_character(character, save_directory="data/save_games"):
         f.write(f"MAGIC: {character['magic']}\n")
         f.write(f"EXPERIENCE: {character['experience']}\n")
         f.write(f"GOLD: {character['gold']}\n")
-        f.write(f"INVENTORY: {','.join(character['inventory'])}\n")
-        f.write(f"ACTIVE_QUESTS: {','.join(character['active_quests'])}\n")
-        f.write(f"COMPLETED_QUESTS: {','.join(character['completed_quests'])}\n")
-        f.write(f"EQUIPPED_WEAPON: {character.get('equipped_weapon') or ''}\n")
-        f.write(f"EQUIPPED_ARMOR: {character.get('equipped_armor') or ''}\n")
+        
+        inv = ",".join(character["inventory"])
+        active = ",".join(character["active_quests"])
+        done = ",".join(character["completed_quests"])
 
+        f.write(f"INVENTORY: {inv}\n")
+        f.write(f"ACTIVE_QUESTS: {active}\n")
+        f.write(f"COMPLETED_QUESTS: {done}\n")
+        
     return True
 except:
     raise IOError("error saving character file")
@@ -144,10 +129,12 @@ def load_character(character_name, save_directory="data/save_games"):
         SaveFileCorruptedError if file exists but can't be read
         InvalidSaveDataError if data format is wrong
     """
-    filename = os.path.join(save_directory, f"{character_name}_save.txt")
+    filename = os.path.join(save_directory, f"
+{character_name}_save.txt")
 
     if not os.path.exists(filename):
-        raise CharacterNotFoundError(f"no save file for: {character_name}")
+        raise CharacterNotFoundError(f"no save file for:
+{character_name}")
 
     try:
         with open(filename, "r") as f:
@@ -217,12 +204,16 @@ def delete_character(character_name, save_directory="data/save_games"):
     Returns: True if deleted successfully
     Raises: CharacterNotFoundError if character doesn't exist
     """
-    path = os.path.join(save_directory, f"{character_name}_save.txt")
+    filename = os.path.join(save_directory, f"{character_name}_save.txt")
 
-    if not os.path.exists(path):
-        raise CharacterNotFoundError(f"No save file: {character_name}")
+    if not os.path.exists(filename):
+        raise CharacterNotFoundError(f"no save file for: {character_name}")
 
-    os.remove(path)
+    try:
+        os.remove(filename)
+    except:
+        raise SaveFileCorruptedError("could not delete save file")
+
     return True
     # TODO: Implement character deletion
     # Verify file exists before attempting deletion
@@ -278,10 +269,11 @@ def add_gold(character, amount):
     Returns: New gold total
     Raises: ValueError if result would be negative
     """
-    if character['gold'] + amount < 0:
-        raise ValueError("Not enough gold")
-    character['gold'] += amount
-    return character['gold']
+    new_total = character["gold"] + amount
+    if new_total < 0:
+        raise ValueError("not enough gold")
+    character["gold"] = new_total
+    return character["gold"]
     # TODO: Implement gold management
     # Check that result won't be negative
     # Update character's gold
@@ -298,9 +290,10 @@ def heal_character(character, amount):
     if is_character_dead(character):
         return 0
 
-    old_health = character['health']
-    character['health'] = min(character['health'] + amount, character['max_health'])
-    return character['health'] - old_health
+    start = character["health"]
+    new_hp = min(start + amount, character["max_health"])
+    character["health"] = new_hp
+    return new_hp - start
     # TODO: Implement healing
     # Calculate actual healing (don't exceed max_health)
     # Update character health
@@ -322,9 +315,8 @@ def revive_character(character):
     
     Returns: True if revived
     """
-    if not is_character_dead(character):
-        return False
-    character['health'] = character['max_health'] // 2
+    half = character["max_health"] // 2
+    character["health"] = half
     return True
     # TODO: Implement revival
     # Restore health to half of max_health
