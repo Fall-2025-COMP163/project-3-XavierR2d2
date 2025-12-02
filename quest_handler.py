@@ -4,7 +4,7 @@ Quest Handler Module - Starter Code
 
 Name: Xavier Rothwell
 
-AI Usage: ai was used to fix and debug code through out the making process
+AI Usage: ai was used to fix and debug code through out the making process.
 
 This module handles quest management, dependencies, and completion.
 """
