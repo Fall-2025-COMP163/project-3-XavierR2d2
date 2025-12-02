@@ -3,7 +3,7 @@ COMP 163 - Project 3: Quest Chronicles
 Combat System Module - Starter Code
 
 Name: Xavier Rothwell
-AI Usage: [Document any AI assistance used]
+AI Usage: chat gpt was used to help with the formating and debugging of the code
 
 Handles combat mechanics
 """
@@ -18,6 +18,7 @@ from custom_exceptions import (
 # ============================================================================
 # ENEMY DEFINITIONS
 # ============================================================================
+
 
 def create_enemy(enemy_type):
     enemy_type = enemy_type.lower()  # make input flexible
@@ -53,7 +54,7 @@ def create_enemy(enemy_type):
     }
 
     if enemy_type not in enemy_stats:
-        raise InvalidTargetError(f"Unknown enemy type: {enemy_type}")
+        raise InvalidTargetException(f"Unknown enemy type: {enemy_type}")
 
     return enemy_stats[enemy_type].copy()
     pass
@@ -67,6 +68,7 @@ def get_random_enemy_for_level(character_level):
     else:
         return create_enemy("dragon")
     pass
+
 
 # ============================================================================
 # COMBAT SYSTEM
@@ -87,9 +89,9 @@ class SimpleBattle:
     def start_battle(self):
 
         if self.character["health"] <= 0:
-            raise CharacterDeadError("Character is dead and cannot fight.")
+            raise CharacterDeadException("Character is dead and cannot fight.")
 
-    # loop while both sides are alive and combat is active
+        # loop while both sides are alive and combat is active
         while self.combat_active:
 
             # PLAYER TURN
@@ -107,27 +109,27 @@ class SimpleBattle:
         # next round
         self.turn += 1
 
-    # after battle ends, build result dictionary
+        # after battle ends, build result dictionary
         if winner == "player":
             rewards = get_victory_rewards(self.enemy)
             return {
-            "winner": "player",
-            "xp_gained": rewards["xp"],
-            "gold_gained": rewards["gold"],
-        }
+                "winner": "player",
+                "xp_gained": rewards["xp"],
+                "gold_gained": rewards["gold"],
+            }
 
         else:
             return {
-            "winner": "enemy",
-            "xp_gained": 0,
-            "gold_gained": 0,
-        }
+                "winner": "enemy",
+                "xp_gained": 0,
+                "gold_gained": 0,
+            }
         pass
     
     def player_turn(self):
 
         if not self.combat_active:
-            raise CombatNotActiveError("Combat is not active.")
+            raise CombatNotActiveException("Combat is not active.")
         
         damage = self.calculate_damage(self.character, self.enemy)
         self.apply_damage(self.enemy, damage)
@@ -138,7 +140,7 @@ class SimpleBattle:
     def enemy_turn(self):
 
         if not self.combat_active:
-            raise CombatNotActiveError("Combat is not active.")
+            raise CombatNotActiveException("Combat is not active.")
 
         # enemy always does a basic attack
         damage = self.calculate_damage(self.enemy, self.character)
@@ -149,9 +151,9 @@ class SimpleBattle:
     
     def calculate_damage(self, attacker, defender):
 
-         damage = attacker["strength"] - (defender["strength"] // 4)
+        damage = attacker["strength"] - (defender["strength"] // 4)
 
-    # damage can never be lower than 1
+        # damage can never be lower than 1
         if damage < 1:
             damage = 1
 
@@ -173,7 +175,7 @@ class SimpleBattle:
             self.combat_active = False
             return "player"
 
-    # player dead, enemy wins
+        # player dead, enemy wins
         if self.character["health"] <= 0:
             self.combat_active = False
             return "enemy"
@@ -186,7 +188,7 @@ class SimpleBattle:
         roll = random.random()  # random number 0 to 1
 
         if roll < 0.5:
-        # success
+            # success
             self.combat_active = False
             display_battle_log("You escaped successfully!")
             return True
@@ -195,6 +197,7 @@ class SimpleBattle:
             display_battle_log("You failed to escape!")
             return False
         pass
+
 
 # ============================================================================
 # SPECIAL ABILITIES
@@ -217,8 +220,9 @@ def use_special_ability(character, enemy):
         return cleric_heal(character)
 
     else:
-        raise InvalidTargetError("Unknown character class.")
+        raise InvalidTargetException("Unknown character class.")
     pass
+
 
 def warrior_power_strike(character, enemy):
     """Warrior special ability"""
@@ -237,6 +241,7 @@ def warrior_power_strike(character, enemy):
     return f"Warrior uses Power Strike for {damage} damage!"
     pass
 
+
 def mage_fireball(character, enemy):
     """Mage special ability"""
     base = character["magic"] * 2
@@ -253,6 +258,7 @@ def mage_fireball(character, enemy):
 
     return f"Mage casts Fireball for {damage} damage!"
     pass
+
 
 def rogue_critical_strike(character, enemy):
     """Rogue special ability"""
@@ -278,6 +284,7 @@ def rogue_critical_strike(character, enemy):
     return f"Rogue uses Critical Strike: {message} {damage} damage!"
     pass
 
+
 def cleric_heal(character):
     """Cleric special ability"""
     character["health"] += 30
@@ -288,6 +295,7 @@ def cleric_heal(character):
     return "Cleric casts Heal and restores 30 HP"
     pass
 
+
 # ============================================================================
 # COMBAT UTILITIES
 # ============================================================================
@@ -296,10 +304,10 @@ def can_character_fight(character):
     # TODO: Implement fight check
     pass
 
+
 def get_victory_rewards(enemy):
     """
     Calculate rewards for defeating enemy
-    
     Returns: Dictionary with 'xp' and 'gold'
     """
     return {
@@ -308,15 +316,16 @@ def get_victory_rewards(enemy):
     }
     pass
 
+
 def display_combat_stats(character, enemy):
     """
     Display current combat status
-    
     Shows both character and enemy health/stats
     """
     print(f"\n{character['name']}: HP={character['health']}/{character['max_health']}")
     print(f"{enemy['name']}: HP={enemy['health']}/{enemy['max_health']}")
     pass
+
 
 def display_battle_log(message):
     """
@@ -324,7 +333,6 @@ def display_battle_log(message):
     """
     print(f">>> {message}")
     pass
-
 # ============================================================================
 # TESTING
 # ============================================================================
