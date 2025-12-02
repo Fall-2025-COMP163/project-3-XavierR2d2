@@ -76,7 +76,7 @@ def has_item(character, item_id):
     Returns: True if item in inventory, False otherwise
     """
     inventory = character["inventory"]
-
+    
     return item_id in inventory
 
 
@@ -110,9 +110,9 @@ def clear_inventory(character):
     Returns: List of removed items
     """
     old_items = character["inventory"].copy()   # save what was there
-
+    
     character["inventory"].clear()              # empty the inventory
-
+    
     return old_items
 
 # ============================================================================
