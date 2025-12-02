@@ -11,21 +11,18 @@ import os
 from custom_exceptions import (
     InvalidDataFormatError,
     MissingDataFileError,
-    CorruptedDataError,
-    QuestNotFoundError,
-    InsufficientLevelError,
-    QuestRequirementsNotMetError,
-    QuestAlreadyCompletedError,
-    QuestNotActiveError
+    CorruptedDataError
 )
 
-# ============================================================================ 
+# ============================================================================
 # DATA LOADING FUNCTIONS
 # ============================================================================
 
 def load_quests(filename="data/quests.txt"):
+
     if not os.path.exists(filename):
         raise MissingDataFileError(f"Quest file not found: {filename}")
+
     try:
         with open(filename, "r") as f:
             content = f.read().strip()
@@ -35,30 +32,31 @@ def load_quests(filename="data/quests.txt"):
     if content == "":
         raise InvalidDataFormatError("Quest file is empty.")
 
-    blocks = [b.strip() for b in content.split("\n\n") if b.strip()]
+    # split into blocks safely (ignore accidental extra blank lines)
+    blocks = [b.strip() for b in content.split("\n\n") if b.strip() != ""]
+
     quests = {}
 
     for block in blocks:
-        lines = [line.strip() for line in block.split("\n") if line.strip()]
-        quest = parse_quest_block(lines)
-        validate_quest_data(quest)
+        lines = [line.strip() for line in block.split("\n") if line.strip() != ""]
+        quest_dict = parse_quest_block(lines)
+        validate_quest_data(quest_dict)
 
-        quest_id = quest.get("QUEST_ID")
-        if not quest_id:
+        # must contain quest_id or test fails
+        qid = quest_dict.get("quest_id")
+        if not qid:
             raise InvalidDataFormatError("Missing quest_id field.")
 
-        # Initialize quest state
-        quest.setdefault("ACTIVE", True)
-        quest.setdefault("COMPLETED", False)
-
-        quests[quest_id] = quest
+        quests[qid] = quest_dict
 
     return quests
 
 
 def load_items(filename="data/items.txt"):
+
     if not os.path.exists(filename):
         raise MissingDataFileError(f"Item file not found: {filename}")
+
     try:
         with open(filename, "r") as f:
             content = f.read().strip()
@@ -68,99 +66,86 @@ def load_items(filename="data/items.txt"):
     if content == "":
         raise InvalidDataFormatError("Item file is empty.")
 
-    blocks = [b.strip() for b in content.split("\n\n") if b.strip()]
+    blocks = [b.strip() for b in content.split("\n\n") if b.strip() != ""]
+
     items = {}
 
     for block in blocks:
-        lines = [line.strip() for line in block.split("\n") if line.strip()]
-        item = parse_item_block(lines)
-        validate_item_data(item)
+        lines = [line.strip() for line in block.split("\n") if line.strip() != ""]
+        item_dict = parse_item_block(lines)
+        validate_item_data(item_dict)
 
-        item_id = item.get("ITEM_ID")
+        item_id = item_dict.get("item_id")
         if not item_id:
             raise InvalidDataFormatError("Missing item_id field.")
 
-        items[item_id] = item
+        items[item_id] = item_dict
 
     return items
 
 
-# ============================================================================ 
+# ============================================================================
 # VALIDATION HELPERS
-# ============================================================================ 
+# ============================================================================
 
-def validate_quest_data(quest):
-    required = ["QUEST_ID", "TITLE", "DESCRIPTION", "REWARD_XP", "REWARD_GOLD", "REQUIRED_LEVEL", "PREREQUISITE"]
-    for field in required:
-        if field not in quest:
+def validate_quest_data(quest_dict):
+
+    required_fields = [
+        "quest_id",
+        "title",
+        "description",
+        "reward_xp",
+        "reward_gold",
+        "required_level",
+        "prerequisite"
+    ]
+
+    for field in required_fields:
+        if field not in quest_dict:
             raise InvalidDataFormatError(f"Missing field: {field}")
 
-    for key in ["REWARD_XP", "REWARD_GOLD", "REQUIRED_LEVEL"]:
-        if not isinstance(quest[key], int):
-            raise InvalidDataFormatError(f"{key} must be an integer")
+    if not isinstance(quest_dict["reward_xp"], int):
+        raise InvalidDataFormatError("reward_xp must be an integer.")
+
+    if not isinstance(quest_dict["reward_gold"], int):
+        raise InvalidDataFormatError("reward_gold must be an integer.")
+
+    if not isinstance(quest_dict["required_level"], int):
+        raise InvalidDataFormatError("required_level must be an integer.")
 
     return True
 
 
-def validate_item_data(item):
-    required = ["ITEM_ID", "NAME", "TYPE", "EFFECT", "COST", "DESCRIPTION"]
-    for field in required:
-        if field not in item:
-            raise InvalidDataFormatError(f"Missing field: {field}")
+def validate_item_data(item_dict):
 
-    if item["TYPE"] not in ["weapon", "armor", "consumable"]:
-        raise InvalidDataFormatError(f"Invalid item type: {item['TYPE']}")
+    required_fields = ["item_id", "name", "type", "effect", "cost", "description"]
 
-    if not isinstance(item["COST"], int):
-        raise InvalidDataFormatError("COST must be integer")
+    for field in required_fields:
+        if field not in item_dict:
+            raise InvalidDataFormatError(f"Missing item field: {field}")
+
+    valid_types = ["weapon", "armor", "consumable"]
+
+    if item_dict["type"] not in valid_types:
+        raise InvalidDataFormatError(f"Invalid item type: {item_dict['type']}")
+
+    if not isinstance(item_dict["cost"], int):
+        raise InvalidDataFormatError("Item cost must be an integer")
 
     return True
 
 
-# ============================================================================ 
-# PARSING HELPERS
-# ============================================================================ 
-
-def parse_quest_block(lines):
-    quest = {}
-    for line in lines:
-        if ": " not in line:
-            raise InvalidDataFormatError("Invalid quest line format")
-        key, value = line.split(": ", 1)
-        key = key.strip().upper()
-        value = value.strip()
-        if key in ["REWARD_XP", "REWARD_GOLD", "REQUIRED_LEVEL"]:
-            try:
-                value = int(value)
-            except:
-                raise InvalidDataFormatError(f"{key} must be an integer")
-        quest[key] = value
-    return quest
-
-
-def parse_item_block(lines):
-    item = {}
-    for line in lines:
-        if ": " not in line:
-            raise InvalidDataFormatError("Invalid item line format")
-        key, value = line.split(": ", 1)
-        key = key.strip().upper()
-        value = value.strip()
-        if key == "COST":
-            try:
-                value = int(value)
-            except:
-                raise InvalidDataFormatError("COST must be integer")
-        item[key] = value
-    return item
-
-
-# ============================================================================ 
+# ============================================================================
 # DEFAULT DATA CREATION
-# ============================================================================ 
+# ============================================================================
 
 def create_default_data_files():
-    os.makedirs("data/save_games", exist_ok=True)
+
+    if not os.path.exists("data"):
+        os.makedirs("data")
+
+    if not os.path.exists("data/save_games"):
+        os.makedirs("data/save_games")
 
     if not os.path.exists("data/quests.txt"):
         with open("data/quests.txt", "w") as f:
@@ -186,80 +171,78 @@ def create_default_data_files():
             )
 
 
-# ============================================================================ 
-# QUEST MANAGEMENT
-# ============================================================================ 
+# ============================================================================
+# PARSE BLOCKS
+# ============================================================================
 
-def accept_quest(player, quest_id, quests):
-    if quest_id not in quests:
-        raise QuestNotFoundError(f"Quest not found: {quest_id}")
+def parse_quest_block(lines):
 
-    quest = quests[quest_id]
+    quest_info = {}
 
-    if player["level"] < quest["REQUIRED_LEVEL"]:
-        raise InsufficientLevelError("Player level too low.")
+    for line in lines:
+        if ": " not in line:
+            raise InvalidDataFormatError("Invalid quest line format.")
 
-    prereq = quest.get("PREREQUISITE", "NONE")
-    if prereq != "NONE" and prereq not in player.get("completed_quests", []):
-        raise QuestRequirementsNotMetError("Prerequisite not completed.")
+        key, value = line.split(": ", 1)
+        key = key.lower()
 
-    if quest_id in player.get("completed_quests", []):
-        raise QuestAlreadyCompletedError("Quest already completed.")
+        if key in ["reward_xp", "reward_gold", "required_level"]:
+            try:
+                value = int(value)
+            except:
+                raise InvalidDataFormatError(f"Invalid integer for {key}")
 
-    if not quest.get("ACTIVE", True):
-        raise QuestNotActiveError("Quest not active.")
+        quest_info[key] = value
 
-    player.setdefault("active_quests", [])
-    if quest_id not in player["active_quests"]:
-        player["active_quests"].append(quest_id)
-
-    quest["ACTIVE"] = True
-    return True
+    return quest_info
 
 
-def complete_quest(player, quest_id, quests):
-    if quest_id not in quests:
-        raise QuestNotFoundError(f"Quest not found: {quest_id}")
+def parse_item_block(lines):
 
-    quest = quests[quest_id]
+    item_info = {}
 
-    if quest_id not in player.get("active_quests", []):
-        raise QuestNotActiveError("Quest not active.")
+    for line in lines:
+        if ": " not in line:
+            raise InvalidDataFormatError("Invalid item line format.")
 
-    player["xp"] += quest["REWARD_XP"]
-    player["gold"] += quest["REWARD_GOLD"]
+        key, value = line.split(": ", 1)
+        key = key.lower()
 
-    player["active_quests"].remove(quest_id)
-    player.setdefault("completed_quests", [])
-    player["completed_quests"].append(quest_id)
+        if key == "cost":
+            try:
+                value = int(value)
+            except:
+                raise InvalidDataFormatError("Invalid cost value")
 
-    quest["COMPLETED"] = True
-    quest["ACTIVE"] = False
-    return True
+        item_info[key] = value
 
+    return item_info
+# ============================================================================
+# TESTING
+# ============================================================================
 
-def is_quest_completed(player, quest_id):
-    return quest_id in player.get("completed_quests", [])
-
-
-def can_accept_quest(player, quest_id, quests):
-    if quest_id not in quests:
-        return False
-    quest = quests[quest_id]
-
-    if player["level"] < quest["REQUIRED_LEVEL"]:
-        return False
-
-    prereq = quest.get("PREREQUISITE", "NONE")
-    if prereq != "NONE" and prereq not in player.get("completed_quests", []):
-        return False
-
-    if quest_id in player.get("completed_quests", []):
-        return False
-
-    if not quest.get("ACTIVE", True):
-        return False
-
-    return True
+#if __name__ == "__main__":
+#    print("=== GAME DATA MODULE TEST ===")
+    
+    # Test creating default files
+ #   create_default_data_files()
+    
+    # Test loading quests
+  #  try:
+   #     quests = load_quests()
+    #    print(f"Loaded {len(quests)} quests")
+  #  except MissingDataFileError:
+   #     print("Quest file not found")
+   # except InvalidDataFormatError as e:
+    #    print(f"Invalid quest format: {e}")
+    
+    # Test loading items
+   # try:
+    #    items = load_items()
+     #   print(f"Loaded {len(items)} items")
+    #except MissingDataFileError:
+   #     print("Item file not found")
+   # except InvalidDataFormatError as e:
+    #    print(f"Invalid item format: {e}")
 
 
