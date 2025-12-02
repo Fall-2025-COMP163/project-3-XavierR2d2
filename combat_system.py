@@ -236,34 +236,4 @@ def display_combat_stats(character, enemy):
 
 def display_battle_log(message):
     print(f">>> {message}")
-# ============================================================================
-# TESTING
-# ============================================================================
-
-if __name__ == "__main__":
-    print("=== COMBAT SYSTEM TEST ===")
-    
-     Test enemy creation
-     try:
-         goblin = create_enemy("goblin")
-         print(f"Created {goblin['name']}")
-     except InvalidTargetError as e:
-         print(f"Invalid enemy: {e}")
-    
-     Test battle
-     test_char = {
-         'name': 'Hero',
-         'class': 'Warrior',
-         'health': 120,
-         'max_health': 120,
-         'strength': 15,
-         'magic': 5
-     }
-    
-     battle = SimpleBattle(test_char, goblin)
-     try:
-         result = battle.start_battle()
-         print(f"Battle result: {result}")
-     except CharacterDeadError:
-         print("Character is dead!")
 
