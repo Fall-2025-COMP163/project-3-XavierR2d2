@@ -37,6 +37,7 @@ def load_quests(filename="data/quests.txt"):
         raise InvalidDataFormatError("Quest file is empty.")
 
     blocks = [b.strip() for b in content.split("\n\n") if b.strip() != ""]
+
     quests = {}
 
     for block in blocks:
@@ -44,13 +45,13 @@ def load_quests(filename="data/quests.txt"):
         quest_dict = parse_quest_block(lines)
         validate_quest_data(quest_dict)
 
-        qid = quest_dict.get("quest_id")
-        if not qid:
-            raise InvalidDataFormatError("Missing quest_id field.")
+        # Add default fields for quest management
+        quest_dict.setdefault("COMPLETED", False)
+        quest_dict.setdefault("ACTIVE", True)
 
-        # default active and completed flags
-        quest_dict.setdefault("active", True)
-        quest_dict.setdefault("completed", False)
+        qid = quest_dict.get("QUEST_ID")
+        if not qid:
+            raise InvalidDataFormatError("Missing QUEST_ID field.")
 
         quests[qid] = quest_dict
 
@@ -71,6 +72,7 @@ def load_items(filename="data/items.txt"):
         raise InvalidDataFormatError("Item file is empty.")
 
     blocks = [b.strip() for b in content.split("\n\n") if b.strip() != ""]
+
     items = {}
 
     for block in blocks:
@@ -78,87 +80,91 @@ def load_items(filename="data/items.txt"):
         item_dict = parse_item_block(lines)
         validate_item_data(item_dict)
 
-        item_id = item_dict.get("item_id")
+        item_id = item_dict.get("ITEM_ID")
         if not item_id:
-            raise InvalidDataFormatError("Missing item_id field.")
+            raise InvalidDataFormatError("Missing ITEM_ID field.")
 
         items[item_id] = item_dict
 
     return items
 
 # ============================================================================ 
-# QUEST OPERATIONS
-# ============================================================================
+# VALIDATION HELPERS
+# ============================================================================ 
+
+def validate_quest_data(quest_dict):
+    required_fields = [
+        "QUEST_ID",
+        "TITLE",
+        "DESCRIPTION",
+        "REWARD_XP",
+        "REWARD_GOLD",
+        "REQUIRED_LEVEL",
+        "PREREQUISITE"
+    ]
+
+    for field in required_fields:
+        if field not in quest_dict:
+            raise InvalidDataFormatError(f"Missing field: {field}")
+
+    if not isinstance(quest_dict["REWARD_XP"], int):
+        raise InvalidDataFormatError("REWARD_XP must be an integer.")
+    if not isinstance(quest_dict["REWARD_GOLD"], int):
+        raise InvalidDataFormatError("REWARD_GOLD must be an integer.")
+    if not isinstance(quest_dict["REQUIRED_LEVEL"], int):
+        raise InvalidDataFormatError("REQUIRED_LEVEL must be an integer.")
+
+    return True
+
+
+def validate_item_data(item_dict):
+    required_fields = ["ITEM_ID", "NAME", "TYPE", "EFFECT", "COST", "DESCRIPTION"]
+
+    for field in required_fields:
+        if field not in item_dict:
+            raise InvalidDataFormatError(f"Missing item field: {field}")
+
+    valid_types = ["weapon", "armor", "consumable"]
+    if item_dict["TYPE"] not in valid_types:
+        raise InvalidDataFormatError(f"Invalid item type: {item_dict['TYPE']}")
+    if not isinstance(item_dict["COST"], int):
+        raise InvalidDataFormatError("Item COST must be an integer")
+
+    return True
+
+# ============================================================================ 
+# QUEST MANAGEMENT
+# ============================================================================ 
 
 def start_quest(player, quest_id, quests):
     """
-    Attempt to start a quest for a player
+    Attempt to start a quest for the player.
+    Raises the proper exceptions for failing conditions.
     """
     if quest_id not in quests:
         raise QuestNotFoundError(f"Quest not found: {quest_id}")
 
     quest = quests[quest_id]
 
-    if player["level"] < quest["required_level"]:
-        raise InsufficientLevelError(f"Player level too low for {quest_id}")
+    if player["level"] < quest["REQUIRED_LEVEL"]:
+        raise InsufficientLevelError("Your level is too low to start this quest.")
 
-    prereq = quest.get("prerequisite", "NONE")
+    prereq = quest.get("PREREQUISITE", "NONE")
     if prereq != "NONE" and prereq not in player.get("completed_quests", []):
-        raise QuestRequirementsNotMetError(f"Prerequisite {prereq} not completed")
+        raise QuestRequirementsNotMetError("Prerequisite quest not completed.")
 
-    if quest.get("completed") or quest_id in player.get("completed_quests", []):
-        raise QuestAlreadyCompletedError(f"Quest {quest_id} already completed")
+    if quest.get("COMPLETED", False) or quest_id in player.get("completed_quests", []):
+        raise QuestAlreadyCompletedError("Quest already completed.")
 
-    if not quest.get("active", True):
-        raise QuestNotActiveError(f"Quest {quest_id} is not active")
+    if not quest.get("ACTIVE", True):
+        raise QuestNotActiveError("Quest is not currently active.")
 
-    # Mark quest as active for player
-    quest["active"] = True
-    return quest
-
-# ============================================================================ 
-# VALIDATION HELPERS
-# ============================================================================
-
-def validate_quest_data(quest_dict):
-    required_fields = [
-        "quest_id",
-        "title",
-        "description",
-        "reward_xp",
-        "reward_gold",
-        "required_level",
-        "prerequisite"
-    ]
-    for field in required_fields:
-        if field not in quest_dict:
-            raise InvalidDataFormatError(f"Missing field: {field}")
-
-    if not isinstance(quest_dict["reward_xp"], int):
-        raise InvalidDataFormatError("reward_xp must be an integer.")
-    if not isinstance(quest_dict["reward_gold"], int):
-        raise InvalidDataFormatError("reward_gold must be an integer.")
-    if not isinstance(quest_dict["required_level"], int):
-        raise InvalidDataFormatError("required_level must be an integer.")
-    return True
-
-
-def validate_item_data(item_dict):
-    required_fields = ["item_id", "name", "type", "effect", "cost", "description"]
-    for field in required_fields:
-        if field not in item_dict:
-            raise InvalidDataFormatError(f"Missing item field: {field}")
-
-    valid_types = ["weapon", "armor", "consumable"]
-    if item_dict["type"] not in valid_types:
-        raise InvalidDataFormatError(f"Invalid item type: {item_dict['type']}")
-    if not isinstance(item_dict["cost"], int):
-        raise InvalidDataFormatError("Item cost must be an integer")
+    quest["ACTIVE"] = True
     return True
 
 # ============================================================================ 
 # DEFAULT DATA CREATION
-# ============================================================================
+# ============================================================================ 
 
 def create_default_data_files():
     os.makedirs("data/save_games", exist_ok=True)
@@ -188,7 +194,7 @@ def create_default_data_files():
 
 # ============================================================================ 
 # PARSE BLOCKS
-# ============================================================================
+# ============================================================================ 
 
 def parse_quest_block(lines):
     quest_info = {}
@@ -196,8 +202,8 @@ def parse_quest_block(lines):
         if ": " not in line:
             raise InvalidDataFormatError("Invalid quest line format.")
         key, value = line.split(": ", 1)
-        key = key.lower()
-        if key in ["reward_xp", "reward_gold", "required_level"]:
+        # Keep original key casing
+        if key in ["REWARD_XP", "REWARD_GOLD", "REQUIRED_LEVEL"]:
             try:
                 value = int(value)
             except:
@@ -212,12 +218,11 @@ def parse_item_block(lines):
         if ": " not in line:
             raise InvalidDataFormatError("Invalid item line format.")
         key, value = line.split(": ", 1)
-        key = key.lower()
-        if key == "cost":
+        if key == "COST":
             try:
                 value = int(value)
             except:
-                raise InvalidDataFormatError("Invalid cost value")
+                raise InvalidDataFormatError("Invalid COST value")
         item_info[key] = value
     return item_info
 
