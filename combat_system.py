@@ -15,10 +15,17 @@ from custom_exceptions import (
     AbilityOnCooldownError
 )
 
-# ============================================================================
-# ENEMY DEFINITIONS
-# ============================================================================
+import random
+from custom_exceptions import (
+    InvalidTargetError,
+    CombatNotActiveError,
+    CharacterDeadError,
+    AbilityOnCooldownError
+)
 
+# ---------------------------------------------------------
+# ENEMY DEFINITIONS
+# ---------------------------------------------------------
 
 def create_enemy(enemy_type):
     enemy_type = enemy_type.lower()
@@ -236,4 +243,3 @@ def display_combat_stats(character, enemy):
 
 def display_battle_log(message):
     print(f">>> {message}")
-
