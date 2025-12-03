@@ -149,3 +149,37 @@ Test files are provided for your learning but are protected. Modifying test file
 - Academic integrity investigation
 
 You can view tests to understand requirements, but any modifications will be automatically detected.
+
+Explaining my module's organization
+**Module Architecture**
+
+Each file is organized by what part of the game it handles.
+For example:
+character_manager.py contains everything related to characters (creating, deleting, saving).
+
+combat_system.py stores enemy stats and battle rules.
+All of these modules connect and run through the main.py file.
+
+**Exception Strategy**
+
+Exceptions are used to catch specific errors so the game doesn't break.
+For example:
+ItemNotFoundError is raised if a player tries to use an item they don’t have. And InventoryFullError is raised if the player tries to add something when their inventory is full.
+
+**Design Choices**
+
+No major changes were made to the original project structure. I mainly followed the given requirements and kept the code organized the way the assignment intended.
+
+**AI Usage**
+
+AI Used: ChatGPT
+Purpose: Helping structure functions, fix errors, and understand test cases.
+
+**How to Play**
+
+- When the game starts, it gives three choices: start a new game, load a game, or exit.
+
+- Choosing a new game lets you enter your character’s name and class.
+
+- Choosing load game lets you continue from a previously saved character.
+
